@@ -1,0 +1,10 @@
+
+PYTHONPATH=""
+conda activate politics
+append PYTHONPATH /home/fergal/all/svns/frm/frmbase
+append PYTHONPATH /home/fergal/all/svns/frm/frmplots
+append PYTHONPATH /home/fergal/all/svns/frm/frmgis
+append PYTHONPATH /home/fergal/all/svns/frm/frmpolitics
+
+
+export NEOCITIES_API_KEY="2dd6936c86a418b3a1b5c4b18e1324a6"
