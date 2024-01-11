@@ -30,10 +30,25 @@ o Why does -- become garbled in html?
 from io import StringIO
 import requests 
 import neocities 
+import error 
+import gmail 
 
 def main(jsontext=None):
 
     year = 2024
+    api_key = os.environ['NEOCITIES_API_KEY']
+    nc = neocities.NeoCities(api_key=api_key)
+
+    from_addr = os.environ['GMAIL_ADDRESS']
+    app_pwd = os.environ['GMAIL_APP_PWD']
+    to_addr = "fergal.mullally@gmail.com"
+    emailer = gmail.Gmail(from_addr, app_pwd)
+    emailer = gmail.DummyEmail()
+    
+    with error.ErrorHandler(emailer, to_addr):
+        run(year, nc )
+
+def run(year, neocities, jsontext=None):
     if jsontext is None:
         jsontext = download(year)
     df = pd.read_json(StringIO(jsontext))
@@ -45,8 +60,8 @@ def main(jsontext=None):
     house= convert_to_html(house, "House Bills", year) 
     senate= convert_to_html(senate, "Senate Bills", year) 
 
-    upload(house, "politics/state/house.html")
-    upload(senate, "politics/state/senate.html")
+    upload(neocities, house,  "politics/state/house.html")
+    upload(neocities, senate, "politics/state/senate.html")
     #save(house, "politics/state/house.html")
     return df
 
@@ -59,15 +74,13 @@ def save(html, remote_path):
         fp.write(html)
     
 
-def upload(html, remote_path):
+def upload(neocities, html,remote_path):
     local_file = remote_path.split('/')[-1]
     
     with open(local_file, 'w') as fp:
         fp.write(html)
 
-    api_key = os.environ['NEOCITIES_API_KEY']
-    nc = neocities.NeoCities(api_key=api_key)
-    nc.upload( (local_file, remote_path))
+    neocities.upload( (local_file, remote_path))
 
 
 

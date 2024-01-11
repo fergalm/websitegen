@@ -66,8 +66,11 @@ class DummyEmail:
     def __init__(self):
         pass
 
-    def send(self, msg: EmailMessage):
-        print(msg.get_body().as_string())
+    def send(self, msg: dict):
+        print(f"FROM: {msg.get('from', '<NotSet>')}")
+        print(f"TO: {msg['to']}")
+        print(f"SUBJECT: {msg['subject']}")
+        print(f"\n: {msg['body']}")
 
 
 def test_email():
