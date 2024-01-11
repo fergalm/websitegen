@@ -1,5 +1,7 @@
 #!/bin/bash -l
 
+#Call this as bash -l run.bash
+
 echo Conda Activate
 conda activate website
 echo "Sourcing"
