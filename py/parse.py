@@ -43,7 +43,7 @@ def main(jsontext=None):
     app_pwd = os.environ['GMAIL_APP_PWD']
     to_addr = "fergal.mullally@gmail.com"
     emailer = gmail.Gmail(from_addr, app_pwd)
-    emailer = gmail.DummyEmail()
+    #emailer = gmail.DummyEmail()
     
     with error.ErrorHandler(emailer, to_addr):
         run(year, nc )
@@ -52,9 +52,9 @@ def run(year, neocities, jsontext=None):
     if jsontext is None:
         jsontext = download(year)
     df = pd.read_json(StringIO(jsontext))
-    
-    house = df[df.BillNumber.str[:2] == "HB"]
-    senate = df[df.BillNumber.str[:2] == "SB"]
+
+    house = df[df.BillNumber.str[:2].isin(["HB", "HJ"])]
+    senate = df[df.BillNumber.str[:2].isin(["SB", "SJ"])]
     assert len(df) == len(house) + len(senate)
     
     house= convert_to_html(house, "House Bills", year) 
