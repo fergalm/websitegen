@@ -1,7 +1,3 @@
-from ipdb import set_trace as idebug
-import pandas as pd
-import datetime
-import os
 
 """
 Track bill progress in legislature
@@ -27,11 +23,17 @@ o Site statistics
 o Why does -- become garbled in html?
 """
 
-from io import StringIO
+# from ipdb import set_trace as idebug
+import pandas as pd
+import datetime
 import requests
+import os
+
 from website.utils import neocities
 from website.utils import error
 from website.utils import gmail
+
+from .legquery import MdLegQuery
 
 def main(jsontext=None):
 
@@ -45,13 +47,15 @@ def main(jsontext=None):
     emailer = gmail.Gmail(from_addr, app_pwd)
     #emailer = gmail.DummyEmail()
 
+    leg_query = MdLegQuery()
     with error.ErrorHandler(emailer, to_addr):
-        run(year, nc )
+        run(year, nc, leg_query)
 
-def run(year, neocities, jsontext=None):
-    if jsontext is None:
-        jsontext = download(year)
-    df = pd.read_json(StringIO(jsontext))
+def run(year, neocities, leg_query):
+    # if jsontext is None:
+    #     jsontext = download(year)
+    # df = pd.read_json(StringIO(jsontext))
+    df = leg_query.download(year)
 
     house = df[df.BillNumber.str[:2].isin(["HB", "HJ"])]
     senate = df[df.BillNumber.str[:2].isin(["SB", "SJ"])]
@@ -99,7 +103,7 @@ def download(year):
 def convert_to_html(df, title, year):
     now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
 
-    status = map(set_current_status, df.iterrows())
+    status = list(map(set_current_status, df.iterrows()))
     status = pd.concat(status)
     df = df.merge(status, on='BillNumber')
 
@@ -110,7 +114,10 @@ def convert_to_html(df, title, year):
     cols = "BillNumber CrossfileBillNumber SponsorPrimary Title CommitteePrimaryOrigin Progression DateNextAction".split()
 
     html = df[cols].to_html(table_id="myTable", index=False, escape=False, classes=["stripe", "hover", "cell-border"])
-    template = load_template("template.html")
+
+    path = os.path.dirname(__file__)
+    path = os.path.join(path, "template.html")
+    template = load_template(path)
     html = template %(title, now, html)
     return html
 
