@@ -1,25 +1,21 @@
-from ipdb import set_trace as idebug 
-import pandas as pd 
-import datetime
-import os 
 
 """
-Track bill progress in legislature 
+Track bill progress in legislature
 
-Input json file is from 
+Input json file is from
 https://mgaleg.maryland.gov/mgawebsite/Legislation/Index/house
-Click "Download Legistlative Data" at bottom right of footer 
+Click "Download Legistlative Data" at bottom right of footer
 
-Run the script main, and two html pages are uploaded to 
+Run the script main, and two html pages are uploaded to
 https://fergalm.neocities.org/politics/state/
 
-house.html is a searchable table of house bills 
+house.html is a searchable table of house bills
 senate.html is a searchable table of senate bills
 
 TODO:
-o Set up an always on machine to run this code 
-o Setup up gmail connectivity to email on errors 
-o Advertise 
+o Set up an always on machine to run this code
+o Setup up gmail connectivity to email on errors
+o Advertise
 o Filter out bills with no action??
 o html title tags of house and senate
 o Column renaming
@@ -27,11 +23,17 @@ o Site statistics
 o Why does -- become garbled in html?
 """
 
-from io import StringIO
-import requests 
-import neocities 
-import error 
-import gmail 
+# from ipdb import set_trace as idebug
+import pandas as pd
+import datetime
+import requests
+import os
+
+from website.utils import neocities
+from website.utils import error
+from website.utils import gmail
+
+from .legquery import MdLegQuery
 
 def main(jsontext=None):
 
@@ -44,21 +46,23 @@ def main(jsontext=None):
     to_addr = "fergal.mullally@gmail.com"
     emailer = gmail.Gmail(from_addr, app_pwd)
     #emailer = gmail.DummyEmail()
-    
-    with error.ErrorHandler(emailer, to_addr):
-        run(year, nc )
 
-def run(year, neocities, jsontext=None):
-    if jsontext is None:
-        jsontext = download(year)
-    df = pd.read_json(StringIO(jsontext))
+    leg_query = MdLegQuery()
+    with error.ErrorHandler(emailer, to_addr):
+        run(year, nc, leg_query)
+
+def run(year, neocities, leg_query):
+    # if jsontext is None:
+    #     jsontext = download(year)
+    # df = pd.read_json(StringIO(jsontext))
+    df = leg_query.download(year)
 
     house = df[df.BillNumber.str[:2].isin(["HB", "HJ"])]
     senate = df[df.BillNumber.str[:2].isin(["SB", "SJ"])]
     assert len(df) == len(house) + len(senate)
-    
-    house= convert_to_html(house, "House Bills", year) 
-    senate= convert_to_html(senate, "Senate Bills", year) 
+
+    house= convert_to_html(house, "House Bills", year)
+    senate= convert_to_html(senate, "Senate Bills", year)
 
     upload(neocities, house,  "politics/state/house.html")
     upload(neocities, senate, "politics/state/senate.html")
@@ -69,14 +73,14 @@ def run(year, neocities, jsontext=None):
 def save(html, remote_path):
     """A debugging func"""
     local_file = remote_path.split('/')[-1]
-    
+
     with open(local_file, 'w') as fp:
         fp.write(html)
-    
+
 
 def upload(neocities, html,remote_path):
     local_file = remote_path.split('/')[-1]
-    
+
     with open(local_file, 'w') as fp:
         fp.write(html)
 
@@ -90,34 +94,37 @@ def download(year):
 
     response = requests.get(url)
     response.raise_for_status()
-    
+
     text = response.text
     return text
 
 
 
-def convert_to_html(df, title, year):    
+def convert_to_html(df, title, year):
     now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
-    
-    status = map(set_current_status, df.iterrows())
+
+    status = list(map(set_current_status, df.iterrows()))
     status = pd.concat(status)
     df = df.merge(status, on='BillNumber')
-    
+
     #df = df[:5]
 
     df['BillNumber'] = df.BillNumber.apply(make_link, year=year)
-    
+
     cols = "BillNumber CrossfileBillNumber SponsorPrimary Title CommitteePrimaryOrigin Progression DateNextAction".split()
 
     html = df[cols].to_html(table_id="myTable", index=False, escape=False, classes=["stripe", "hover", "cell-border"])
-    template = load_template("template.html")
+
+    path = os.path.dirname(__file__)
+    path = os.path.join(path, "template.html")
+    template = load_template(path)
     html = template %(title, now, html)
-    return html 
+    return html
 
 def make_link(billnum, year):
     strr = f"<A href='https://mgaleg.maryland.gov/mgawebsite/Legislation/Details/{billnum.lower()}?ys={year}RS'>{billnum}</A>"
-    
-    return strr 
+
+    return strr
 
 
 def load_template(fn):
@@ -127,34 +134,34 @@ def load_template(fn):
 
 
 def set_current_status(row):
-    i, row = row 
-    
+    i, row = row
+
     cols = """
-        FirstReadingDateHouseOfOrigin                                                   
-        HearingDateTimePrimaryHouseOfOrigin                                                   
-        HearingDateTimeSecondaryHouseOfOrigin                                                  
-        ReportDateHouseOfOrigin                                                                
+        FirstReadingDateHouseOfOrigin
+        HearingDateTimePrimaryHouseOfOrigin
+        HearingDateTimeSecondaryHouseOfOrigin
+        ReportDateHouseOfOrigin
         ReportActionHouseOfOrigin
-        SecondReadingDateHouseOfOrigin                                                         
+        SecondReadingDateHouseOfOrigin
         SecondReadingActionHouseOfOrigin
-        ThirdReadingDateHouseOfOrigin                                                          
+        ThirdReadingDateHouseOfOrigin
         ThirdReadingActionHouseOfOrigin
-        FirstReadingDateOppositeHouse                                                          
-        HearingDateTimePrimaryOppositeHouse                                                    
-        HearingDateTimeSecondaryOppositeHouse                                                  
+        FirstReadingDateOppositeHouse
+        HearingDateTimePrimaryOppositeHouse
+        HearingDateTimeSecondaryOppositeHouse
         ReportDateOppositeHouse                                                                    """.split()
-    
+
     status = "Unfiled"
     date = "2011-09-18"
     for c in cols:
-        
+
         if isinstance(row[c], str) and len(row[c]) > 9:
-            status = c 
+            status = c
             date = row[c]
-            
+
     out = pd.DataFrame()
     out['BillNumber'] = [row.BillNumber]
-    out['Progression'] = [status] 
-    out['DateNextAction'] = [date] 
+    out['Progression'] = [status]
+    out['DateNextAction'] = [date]
     return out
-        
+

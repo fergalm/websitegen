@@ -1,15 +1,28 @@
 import requests
 
 """
-Taken from 
+Taken from
 https://github.com/neocities/python-neocities/blob/master/neocities/neocities.py
 
-By soulshake 
+By soulshake
 This code is GPL Copyrighted
 """
 
+class AbstractNeoCities:
+    def info(self):
+        pass
 
-class NeoCities:
+    def listitems(self):
+        pass
+
+    def delete(self, *filenames):
+        pass
+
+    def upload(self, *filename):
+        pass
+
+
+class NeoCities(AbstractNeoCities):
     api_key = None
     def __init__(self, username=None, password=None, api_key=None, options={}):
         self.auth = (username, password)
@@ -126,13 +139,30 @@ class NeoCities:
         else:
             return response.json()
 
-    class InvalidRequestError(Exception):
-        """
-        Exception for signalling a request different than 200 OK
-        """
-        def __init__(self, status_code, reason=None):
-            self.status_code = status_code
-            self.reason = reason
+class InvalidRequestError(Exception):
+    """
+    Exception for signalling a request different than 200 OK
+    """
+    def __init__(self, status_code, reason=None):
+        self.status_code = status_code
+        self.reason = reason
 
-        def __str__(self):
-            return "Request returned status code {}: {}".format(self.status_code, self.reason)
+    def __str__(self):
+        return "Request returned status code {}: {}".format(self.status_code, self.reason)
+
+
+
+
+
+class DummyNeoCities(AbstractNeoCities):
+    def info(self):
+        pass
+
+    def listitems(self):
+        pass
+
+    def delete(self, *filenames):
+        pass
+
+    def upload(self, *filenames):
+        pass
