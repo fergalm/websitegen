@@ -6,8 +6,6 @@ Created on Mon Oct 14 21:23:36 2024
 """
 
 from ipdb import set_trace as idebug
-from pdb import set_trace as debug
-import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 

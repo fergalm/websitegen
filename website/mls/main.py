@@ -7,7 +7,6 @@ Created on Mon Oct 14 20:50:19 2024
 
 from ipdb import set_trace as idebug
 from pdb import set_trace as debug
-import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 
@@ -29,7 +28,7 @@ def main():
     emailer = gmail.DummyEmail()
 
     error_handler = error.ErrorHandler(emailer, to_addr)
-    query =HomeHarvesMlsQuery()
+    query =HomeHarvestMlsQuery()
     outpath = os.path.join(os.environ['HOME'], "data/mls")
 
     run(error_handler, query, outpath)
@@ -41,6 +40,7 @@ def run(error_handler: error.ErrorHandler, mls_query:AbstractMlsQuery, outpath:s
         start = end - pd.DateOffset(months=1)
 
         os.makedirs(outpath, exist_ok=True)
+        idebug()
         df = mls_query.query(start, end)
         save(df, outpath, start, end)
 
