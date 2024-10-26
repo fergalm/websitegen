@@ -38,7 +38,7 @@ def run(error_handler: error.ErrorHandler, mls_query:AbstractMlsQuery, outpath:s
     with error_handler:
         end = pd.to_datetime("now")
         end = end.floor('1D') + pd.to_timedelta('6H')
-        start = end - pd.to_timedelta('1D')
+        start = end - pd.DateOffset(months=1)
 
         os.makedirs(outpath, exist_ok=True)
         df = mls_query.query(start, end)
