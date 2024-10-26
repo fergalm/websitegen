@@ -2,6 +2,8 @@
 
 #Call this as bash -l run.bash
 
+echo "Running at"
+date 
 echo Conda Activate
 conda activate website
 echo "Sourcing"
